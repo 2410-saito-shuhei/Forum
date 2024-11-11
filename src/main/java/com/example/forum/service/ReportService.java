@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -35,6 +36,8 @@ public class ReportService {
             Report result = results.get(i);
             report.setId(result.getId());
             report.setContent(result.getContent());
+            report.setCreatedDate(result.getCreatedDate());
+            report.setUpdatedDate(result.getUpdatedDate());
             reports.add(report);
         }
         return reports;
@@ -55,6 +58,12 @@ public class ReportService {
         Report report = new Report();
         report.setId(reqReport.getId());
         report.setContent(reqReport.getContent());
+        report.setUpdatedDate(new Date());
+        if (reqReport.getCreatedDate() == null) {
+            report.setCreatedDate(new Date());
+        } else {
+            report.setCreatedDate(reqReport.getCreatedDate());
+        }
         return report;
     }
 

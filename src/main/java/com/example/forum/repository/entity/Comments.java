@@ -16,4 +16,7 @@ public class Comments {
 
     @Column
     private String content;
+
+    @Column
+    private int reportId;
 }

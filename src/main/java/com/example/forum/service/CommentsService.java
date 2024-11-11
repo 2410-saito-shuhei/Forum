@@ -36,8 +36,43 @@ public class CommentsService {
             Comments result = results.get(i);
             comment.setId(result.getId());
             comment.setContent(result.getContent());
+            comment.setReportId(result.getReportId());
             comments.add(comment);
         }
         return comments;
+    }
+
+    /*
+     * レコード追加
+     */
+    public void saveComments(CommentsForm reqComments) {
+        Comments saveComments = setCommentsEntity(reqComments);
+        commentsRepository.save(saveComments);
+    }
+
+    /*
+     * リクエストから取得した情報をEntityに設定
+     */
+    private Comments setCommentsEntity(CommentsForm reqComments) {
+        Comments comments = new Comments();
+        comments.setId(reqComments.getId());
+        comments.setContent(reqComments.getContent());
+        comments.setReportId(reqComments.getReportId());
+        return comments;
+    }
+
+    //レコード1件取得
+    public CommentsForm editComments(Integer id){
+        List<Comments> results = new ArrayList<>();
+        results.add((Comments) commentsRepository.findById(id).orElse(null));
+        List<CommentsForm> comments = setCommentsForm(results);
+        return comments.get(0);
+    }
+
+    /*
+     * レコード削除
+     */
+    public void deleteComments(Integer id) {
+        commentsRepository.deleteById(id);
     }
 }

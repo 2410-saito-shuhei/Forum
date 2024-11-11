@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.w3.org/1999/xhtml">
+<html xmlns:th="http://www.w3.org/1999/xhtml" xmlns="http://www.w3.org/1999/html">
 <head>
     <meta charset="UTF-8">
     <link th:href="@{/css/style.css}" rel="styleSheet">
@@ -13,6 +13,13 @@
     <a href="/new">
         <button class="new-button" type="button">新規投稿</button>
     </a>
+    <div class="search">
+        <form th:action="@{search/{start}/{end}(start=${start}, end=${end})}" method="get">
+            <input type="date" name="start" value="${start}">
+            <input type="date" name="end" value="${end}">
+            <input type="submit" value="絞込">
+        </form>
+    </div>
     <div class="message-icon" th:each="content : ${contents}">
         <div>
             ID : <span th:text="${content.id}"/>
@@ -29,6 +36,28 @@
             <a th:href="@{/edit/{id}(id=${content.id})}">
                 <input type="button" value="編集" />
             </a>
+        </div>
+        <div class="comment-button">
+            <form th:action="@{/addComments/{reportId}(reportId=${content.id})}" th:method="post" th:object="${formModel}">
+                <textarea class="tweet-box" th:field="*{content}" size="20" maxlength="200" /></textarea><br/>
+                <input type="submit" value="返信" />
+            </form>
+        </div>
+        <label>返信一覧</label>
+        <div class="comments" th:each="comment:${comments}">
+            <div th:if="${comment.reportId == content.id}">
+                <span th:text="'&gt;' + '&gt;' + ${comment.content}"/></br>
+                <div class="edit-button">
+                    <a th:href="@{/editComments/{id}(id=${comment.id})}">
+                        <input type="button" value="編集" />
+                    </a>
+                </div>
+                <div class="delete">
+                    <form th:action="@{/deleteComments/{id}(id=${comment.id})}" th:method="delete">
+                        <input type="submit" value="削除" />
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 </div>
