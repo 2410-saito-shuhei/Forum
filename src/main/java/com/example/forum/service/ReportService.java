@@ -5,7 +5,10 @@ import com.example.forum.repository.ReportRepository;
 import com.example.forum.repository.entity.Report;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,8 +22,29 @@ public class ReportService {
     /*
      * レコード全件取得処理
      */
-    public List<ReportForm> findAllReport() {
-        List<Report> results = reportRepository.findAllByOrderByIdDesc();
+    public List<ReportForm> findByCreatedDateBetweenOrderByUpdatedDateDesc(String start, String end) throws ParseException {
+        // 投稿を絞り込んで取得
+        String defaultStart = "2020-01-01 00:00:00";
+        Date nowDate = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String defaultEnd = sdf.format(nowDate);
+        String startParam = null;
+        String endParam = null;
+
+        if (StringUtils.hasText(start)) {
+            startParam = start + " " + "00:00:00";
+        } else {
+            startParam = defaultStart;
+        }
+        if (StringUtils.hasText(end)) {
+            endParam = end + " " + "23:59:59";
+        } else {
+            endParam = defaultEnd;
+        }
+
+        Date startDate = sdf.parse(startParam);
+        Date endDate = sdf.parse(endParam);
+        List<Report> results = reportRepository.findByCreatedDateBetweenOrderByUpdatedDateDesc(startDate, endDate);
         List<ReportForm> reports = setReportForm(results);
         return reports;
     }
@@ -46,7 +70,7 @@ public class ReportService {
     /*
      * レコード追加
      */
-    public void saveReport(ReportForm reqReport) {
+    public void saveReport(ReportForm reqReport) throws ParseException {
         Report saveReport = setReportEntity(reqReport);
         reportRepository.save(saveReport);
     }
@@ -54,13 +78,17 @@ public class ReportService {
     /*
      * リクエストから取得した情報をEntityに設定
      */
-    private Report setReportEntity(ReportForm reqReport) {
+    private Report setReportEntity(ReportForm reqReport) throws ParseException {
         Report report = new Report();
         report.setId(reqReport.getId());
         report.setContent(reqReport.getContent());
-        report.setUpdatedDate(new Date());
+
+        Date nowDate = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String currentTime = sdf.format(nowDate);
+        report.setUpdatedDate(sdf.parse(currentTime));
         if (reqReport.getCreatedDate() == null) {
-            report.setCreatedDate(new Date());
+            report.setCreatedDate(sdf.parse(currentTime));
         } else {
             report.setCreatedDate(reqReport.getCreatedDate());
         }

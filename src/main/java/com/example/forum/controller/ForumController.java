@@ -5,13 +5,18 @@ import com.example.forum.controller.form.ReportForm;
 import com.example.forum.repository.entity.Comments;
 import com.example.forum.service.CommentsService;
 import com.example.forum.service.ReportService;
+
+import lombok.SneakyThrows;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
+import org.springframework.util.StringUtils;
 
+import java.text.ParseException;
 import java.util.Date;
 import java.util.List;
+import java.text.SimpleDateFormat;
 
 @Controller
 public class ForumController {
@@ -23,11 +28,13 @@ public class ForumController {
     /*
      * 投稿・返信内容表示処理
      */
-    @GetMapping("/search/{start}/{end}")
-    public ModelAndView top(@PathVariable Date start, @PathVariable Date end) {
+    @GetMapping
+    public ModelAndView top(@RequestParam(name = "start", required = false) String start,
+                            @RequestParam(name = "end", required = false) String end) throws ParseException {
         ModelAndView mav = new ModelAndView();
-        // 投稿・返信を全件取得
-        List<ReportForm> contentData = reportService.findAllReport();
+        //投稿を絞り込んで表示
+        List<ReportForm> contentData = reportService.findByCreatedDateBetweenOrderByUpdatedDateDesc(start, end);
+        // 返信を全件表示
         List<CommentsForm> commentsData = commentsService.findAllComments();
         // 空の返信欄を追加
         CommentsForm commentsForm = new CommentsForm();
@@ -61,7 +68,7 @@ public class ForumController {
      * 新規投稿処理
      */
     @PostMapping("/add")
-    public ModelAndView addContent(@ModelAttribute("formModel") ReportForm reportForm){
+    public ModelAndView addContent(@ModelAttribute("formModel") ReportForm reportForm) throws ParseException {
         // 投稿をテーブルに格納
         reportService.saveReport(reportForm);
         // rootへリダイレクト
@@ -96,7 +103,7 @@ public class ForumController {
      * 投稿編集処理
      */
     @PostMapping("/update/{id}")
-    public ModelAndView updateContent(@PathVariable Integer id, @ModelAttribute("formModel") ReportForm report){
+    public ModelAndView updateContent(@PathVariable Integer id, @ModelAttribute("formModel") ReportForm report) throws ParseException {
         // UrlParameterのidを更新するentityにセット
         report.setId(id);
         // 投稿を更新
@@ -108,12 +115,26 @@ public class ForumController {
     /*
      * 新規返信処理
      */
-    @PostMapping("/addComments/{reportId}")
-    public ModelAndView addComments(@PathVariable Integer reportId, @ModelAttribute("formModel") CommentsForm commentsForm){
-        //投稿IDをセット
+    @PostMapping("/addComments/{reportId}/{reportContent}")
+    public ModelAndView addComments(@PathVariable Integer reportId, @PathVariable String reportContent,
+                                    @ModelAttribute("formModel") CommentsForm commentsForm) throws ParseException {
+        //コメントに投稿ID・作成日・更新日をセット
         commentsForm.setReportId(reportId);
+        Date nowDate = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String currentTime = sdf.format(nowDate);
+        Date currentDate = sdf.parse(currentTime);
+        commentsForm.setCreatedDate(currentDate);
+        commentsForm.setUpdatedDate(currentDate);
         // 返信をテーブルに格納
         commentsService.saveComments(commentsForm);
+
+        //投稿の更新日を更新
+        ReportForm reportForm = new ReportForm();
+        reportForm.setId(reportId);
+        reportForm.setContent(reportContent);
+        reportForm.setUpdatedDate(currentDate);
+        reportService.saveReport(reportForm);
         // rootへリダイレクト
         return new ModelAndView("redirect:/");
     }

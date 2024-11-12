@@ -14,7 +14,7 @@
         <button class="new-button" type="button">新規投稿</button>
     </a>
     <div class="search">
-        <form th:action="@{search/{start}/{end}(start=${start}, end=${end})}" method="get">
+        <form th:action="@{/}" th:method="get">
             <input type="date" name="start" value="${start}">
             <input type="date" name="end" value="${end}">
             <input type="submit" value="絞込">
@@ -38,7 +38,8 @@
             </a>
         </div>
         <div class="comment-button">
-            <form th:action="@{/addComments/{reportId}(reportId=${content.id})}" th:method="post" th:object="${formModel}">
+            <form th:action="@{/addComments/{reportId}/{reportContent}(reportId=${content.id},
+              reportContent=${content.content})}" th:method="post" th:object="${formModel}">
                 <textarea class="tweet-box" th:field="*{content}" size="20" maxlength="200" /></textarea><br/>
                 <input type="submit" value="返信" />
             </form>
