@@ -6,14 +6,20 @@ import com.example.forum.repository.entity.Comments;
 import com.example.forum.service.CommentsService;
 import com.example.forum.service.ReportService;
 
+import jakarta.servlet.http.HttpSession;
 import lombok.SneakyThrows;
+import org.hibernate.jpa.internal.util.PersistenceUtilHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.text.SimpleDateFormat;
@@ -21,10 +27,16 @@ import java.text.SimpleDateFormat;
 @Controller
 public class ForumController {
     @Autowired
+    HttpSession session;
+
+    @Autowired
     ReportService reportService;
 
     @Autowired
     CommentsService commentsService;
+
+
+
     /*
      * 投稿・返信内容表示処理
      */
@@ -44,6 +56,14 @@ public class ForumController {
         mav.addObject("contents", contentData);
         mav.addObject("comments", commentsData);
         mav.addObject("formModel", commentsForm);
+        //エラーメッセージ表示
+        List<String> errorMessage = (List<String>) session.getAttribute("errorMessages");
+        if (errorMessage != null){
+            Integer reportId = (Integer) session.getAttribute("reportId");
+            mav.addObject("reportId", reportId);
+            mav.addObject("errorMessages", errorMessage);
+            session.invalidate();
+        }
         return mav;
     }
 
@@ -61,6 +81,12 @@ public class ForumController {
         mav.setViewName("/new");
         // 準備した空のFormを保管
         mav.addObject("formModel", reportForm);
+        //エラーメッセージ表示
+        List<String> errorMessage = (List<String>) session.getAttribute("errorMessages");
+        if (errorMessage != null){
+            mav.addObject("errorMessages", errorMessage);
+            session.invalidate();
+        }
         return mav;
     }
 
@@ -68,7 +94,14 @@ public class ForumController {
      * 新規投稿処理
      */
     @PostMapping("/add")
-    public ModelAndView addContent(@ModelAttribute("formModel") ReportForm reportForm) throws ParseException {
+    public ModelAndView addContent(@ModelAttribute("formModel") @Validated ReportForm reportForm, BindingResult result) throws ParseException {
+        //バリデーションを実行
+        List<String> errorMessages = new ArrayList<String>();
+        if (!isValid(result, errorMessages)) {
+            session.setAttribute("errorMessages", errorMessages);
+            return new ModelAndView("redirect:/new");
+        }
+
         // 投稿をテーブルに格納
         reportService.saveReport(reportForm);
         // rootへリダイレクト
@@ -96,6 +129,12 @@ public class ForumController {
         mav.setViewName("/edit");
         // Formを詰めて編集画面に遷移
         mav.addObject("formModel", report);
+        //エラーメッセージ表示
+        List<String> errorMessage = (List<String>) session.getAttribute("errorMessages");
+        if (errorMessage != null){
+            mav.addObject("errorMessages", errorMessage);
+            session.invalidate();
+        }
         return mav;
     }
 
@@ -103,7 +142,14 @@ public class ForumController {
      * 投稿編集処理
      */
     @PostMapping("/update/{id}")
-    public ModelAndView updateContent(@PathVariable Integer id, @ModelAttribute("formModel") ReportForm report) throws ParseException {
+    public ModelAndView updateContent(@PathVariable Integer id, @ModelAttribute("formModel") @Validated ReportForm report,
+                                      BindingResult result) throws ParseException {
+        //バリデーション実行
+        List<String> errorMessages = new ArrayList<String>();
+        if (!isValid(result, errorMessages)) {
+            session.setAttribute("errorMessages", errorMessages);
+            return new ModelAndView("redirect:/edit/{id}");
+        }
         // UrlParameterのidを更新するentityにセット
         report.setId(id);
         // 投稿を更新
@@ -117,7 +163,14 @@ public class ForumController {
      */
     @PostMapping("/addComments/{reportId}/{reportContent}")
     public ModelAndView addComments(@PathVariable Integer reportId, @PathVariable String reportContent,
-                                    @ModelAttribute("formModel") CommentsForm commentsForm) throws ParseException {
+                                    @ModelAttribute("formModel") @Validated CommentsForm commentsForm, BindingResult result) throws ParseException {
+        //バリデーション実行
+        List<String> errorMessages = new ArrayList<String>();
+        if (!isValid(result, errorMessages)) {
+            session.setAttribute("errorMessages", errorMessages);
+            session.setAttribute("reportId", reportId);
+            return new ModelAndView("redirect:/");
+        }
         //コメントに投稿ID・作成日・更新日をセット
         commentsForm.setReportId(reportId);
         Date nowDate = new Date();
@@ -143,12 +196,18 @@ public class ForumController {
     @GetMapping("/editComments/{id}")
     public ModelAndView editComments(@PathVariable Integer id) {
         ModelAndView mav = new ModelAndView();
-        //投稿の検索、抽出
+        //コメントの検索、抽出
         CommentsForm comments = commentsService.editComments(id);
         // 画面遷移先を指定
         mav.setViewName("/editComments");
         // Formを詰めて編集画面に遷移
         mav.addObject("formModel", comments);
+        //エラーメッセージ表示
+        List<String> errorMessage = (List<String>) session.getAttribute("errorMessages");
+        if (errorMessage != null){
+            mav.addObject("errorMessages", errorMessage);
+            session.invalidate();
+        }
         return mav;
     }
 
@@ -157,12 +216,30 @@ public class ForumController {
      */
     @PostMapping("/updateComments/{id}/{reportId}")
     public ModelAndView updateComments(@PathVariable Integer id, @PathVariable Integer reportId,
-                                       @ModelAttribute("formModel") CommentsForm comments){
+                                       @ModelAttribute("formModel") @Validated CommentsForm comments, BindingResult result) throws ParseException {
+        //バリデーション実行
+        List<String> errorMessages = new ArrayList<String>();
+        if (!isValid(result, errorMessages)) {
+            session.setAttribute("errorMessages", errorMessages);
+            return new ModelAndView("redirect:/editComments/{id}");
+        }
+
+        //現在の日付
+        Date nowDate = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        String currentTime = sdf.format(nowDate);
+        Date currentDate = sdf.parse(currentTime);
+
         // UrlParameterのid、report_idを更新するentityにセット
         comments.setId(id);
         comments.setReportId(reportId);
+        comments.setUpdatedDate(currentDate);
         // 投稿を更新
         commentsService.saveComments(comments);
+        //投稿の検索・更新
+        ReportForm report = reportService.editReport(reportId);
+        report.setUpdatedDate(currentDate);
+        reportService.saveReport(report);
         // rootへリダイレクト
         return new ModelAndView("redirect:/");
     }
@@ -176,5 +253,18 @@ public class ForumController {
         commentsService.deleteComments(id);
         //rootへリダイレクト
         return new ModelAndView("redirect:/");
+    }
+
+    //バリデーションメソッド
+    private boolean isValid(BindingResult result, List<String> errorMessages) {
+        if (result.hasErrors()) {
+            for (FieldError error : result.getFieldErrors()) {
+                String message = error.getDefaultMessage();
+                errorMessages.add(message);
+            }
+            return false;
+        } else {
+            return true;
+        }
     }
 }
