@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="src/main/java/com/example/forum/mapper/ReportMapper">
+    <resultMap id="ReportResult" type="src/main/java/com/example/forum/repository/entity/Report">
+        <result column="id" property="id" />
+        <result column="content" property="content" />
+        <result column="createdDate" property="createdDate" />
+        <result column="updatedDate" property="updatedDate" />
+    </resultMap>
+    <select id="findByCreatedDateBetweenOrderByUpdatedDateDesc" resultMap="ReportResult" parameterType="Date">
+        select id, content, created_date, updated_date
+        from report
+        where created_date between #{start}
+        and #{end}
+        order by updated_date desc;
+    </select>
+    <select id="getTestAll" resultMap="TestResult">
+        select id, name
+        from test;
+    </select>
+    <select id="getTestByDto" resultMap="TestResult">
+        select id, name
+        from test
+        where id = #{id}
+    </select>
+    <insert id="insertTest" parameterType="String">
+        insert into test(name) values (#{name})
+    </insert>
+    <delete id="deleteTest" parameterType="int">
+        delete from test where id = #{id}
+    </delete>
+    <update id="updateTest">
+        update test set name = #{name} where id = #{id}
+    </update>
+</mapper>

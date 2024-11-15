@@ -234,7 +234,7 @@ public class ForumController {
         comments.setId(id);
         comments.setReportId(reportId);
         comments.setUpdatedDate(currentDate);
-        // 投稿を更新
+        // コメントを更新
         commentsService.saveComments(comments);
         //投稿の検索・更新
         ReportForm report = reportService.editReport(reportId);

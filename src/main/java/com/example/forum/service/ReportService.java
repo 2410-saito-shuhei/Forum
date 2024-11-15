@@ -1,6 +1,7 @@
 package com.example.forum.service;
 
 import com.example.forum.controller.form.ReportForm;
+import com.example.forum.mapper.ReportMapper;
 import com.example.forum.repository.ReportRepository;
 import com.example.forum.repository.entity.Report;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +13,14 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class ReportService {
     @Autowired
     ReportRepository reportRepository;
+
+    @Autowired
+    ReportMapper reportMapper;
 
     /*
      * レコード全件取得処理
@@ -44,7 +47,7 @@ public class ReportService {
 
         Date startDate = sdf.parse(startParam);
         Date endDate = sdf.parse(endParam);
-        List<Report> results = reportRepository.findByCreatedDateBetweenOrderByUpdatedDateDesc(startDate, endDate);
+        List<Report> results = reportMapper.findByCreatedDateBetweenOrderByUpdatedDateDesc(startDate, endDate);
         List<ReportForm> reports = setReportForm(results);
         return reports;
     }
